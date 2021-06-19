@@ -1,0 +1,66 @@
+FROM openjdk:8
+
+MAINTAINER Satheesh Pandian <satheeshpandianj@gmail.com>
+
+RUN useradd --create-home -s /Volumes/Adhira/GitHub/CICD/Jmeter/bin/bash jmeter
+WORKDIR /Volumes/Adhira/GitHub/CICD/Jmeter
+COPY /Volumes/Adhira/GitHub/CICD/Jmeter_Scripts/ReqRes.jmx .
+RUN chown -R jmeter:jmeter *
+RUN chmod 775 ReqRes.jmx
+USER jmeter
+
+
+ENV JMETER_VERSION 5.4.1
+ENV JMETER_HOME /Volumes/Adhira/GitHub/CICD/Jmeter/jmeter
+ENV JMETER_BIN $JMETER_HOME/bin
+ENV JMETER_PLUGINS ${JMETER_HOME}/lib/ext
+ENV JMETER_BIN $JMETER_HOME/bin
+ENV PATH ${JMETER_HOME}/bin:${PATH}
+ENV JMETER_PLUGINS_DOWNLOAD_URL https://repo1.maven.org/maven2/kg/apc
+
+RUN cd /tmp && \
+    wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz && \
+    tar -xzf apache-jmeter-${JMETER_VERSION}.tgz -C /Volumes/Adhira/GitHub/CICD/Jmeter
+
+RUN wget https://repo1.maven.org/maven2/kg/apc/cmdrunner/2.0/cmdrunner-2.0.jar && \
+  mv cmdrunner-2.0.jar ${JMETER_HOME}/lib/cmdrunner-2.0.jar
+
+RUN wget https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-manager/0.20/jmeter-plugins-manager-0.20.jar && \
+  mv jmeter-plugins-manager-0.20.jar ${JMETER_PLUGINS}
+
+RUN java -cp ${JMETER_PLUGINS}/jmeter-plugins-manager-0.20.jar org.jmeterplugins.repository.PluginManagerCMDInstaller
+
+RUN ${JMETER_HOME}/bin/PluginsManagerCMD.sh status
+
+RUN wget https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-cmn-jmeter/0.5/jmeter-plugins-cmn-jmeter-0.5.jar && \
+  mv jmeter-plugins-cmn-jmeter-0.5.jar ${JMETER_PLUGINS}
+
+RUN wget  https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-graphs-additional/2.0/jmeter-plugins-graphs-additional-2.0.jar && \
+  mv jmeter-plugins-graphs-additional-2.0.jar ${JMETER_PLUGINS}
+
+RUN wget https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-graphs-basic/2.0/jmeter-plugins-graphs-basic-2.0.jar && \
+  mv jmeter-plugins-graphs-basic-2.0.jar ${JMETER_PLUGINS}
+
+RUN wget https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-graphs-additional/2.0/jmeter-plugins-graphs-additional-2.0.jar && \
+  mv jmeter-plugins-graphs-additional-2.0.jar ${JMETER_PLUGINS}
+
+RUN wget https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-functions/2.0/jmeter-plugins-functions-2.0.jar && \
+  mv jmeter-plugins-functions-2.0.jar ${JMETER_PLUGINS}
+
+RUN wget https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-tst/2.3/jmeter-plugins-tst-2.3.jar && \
+  mv jmeter-plugins-tst-2.3.jar ${JMETER_PLUGINS}
+
+RUN wget https://jmeter-plugins.org/files/packages/bzm-random-csv-0.6.zip && \
+  unzip bzm-random-csv-0.6.zip && \
+  mv lib/ext/jmeter-plugins-random-csv-data-set-0.6.jar ${JMETER_PLUGINS} && \
+  mv lib/jmeter-plugins-cmn-jmeter-0.4.jar ${JMETER_PLUGINS}
+
+RUN ${JMETER_HOME}/bin/PluginsManagerCMD.sh status
+
+#RUN rm apache-jmeter-${JMETER_VERSION}.tgz
+
+ENV PATH $PATH:$JMETER_BIN
+
+WORKDIR $JMETER_HOME
+
+CMD ["jmeter"]

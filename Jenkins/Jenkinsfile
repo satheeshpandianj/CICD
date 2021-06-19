@@ -1,0 +1,42 @@
+#!/bin/groovy
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Prepare') {
+            steps {
+                hipchatSend color: 'PURPLE', credentialId: 'jenkins-hipchat', message: '$JOB_NAME <a href="$BUILD_URL">Build #$BUILD_NUMBER</a> building � $HIPCHAT_CHANGES_OR_CAUSE', notify: true, room: "$JOB_NAME", sendAs: '', server: '', textFormat: false, v2enabled: true
+
+                checkout scm
+                sh '''
+                    set -e
+                    echo $(git rev-parse --verify HEAD) > GIT_COMMIT
+                '''
+                script {
+                    env.GIT_COMMIT = readFile('GIT_COMMIT')
+                }
+            }
+        }
+
+        stage('Run Jmeter tests & Publish Reports') {
+            steps {
+                    sh '''
+                        set -e
+                        set +x
+                        #`aws --region eu-west-2 ecr get-login | sed -e 's/ -e none//'`
+                        mkdir -p reports/jmeter
+                        ls -ltr
+                        ##Images is already Created disabling below step##
+		                docker build  -f /Volumes/Adhira/GitHub/CICD/Docker/Dockerfile.jmeter -t Jmeter .
+                       
+		                chmod 777 /Volumes/Adhira/GitHub/CICD/Shell_Scripts/jmeterscripts.sh
+                         ./jmeterscripts.sh
+                    '''
+
+                    archiveArtifacts 'reports/jmeter/**'
+                    perfReport compareBuildPrevious: true, errorFailedThreshold: 10, errorUnstableThreshold: 5, excludeResponseTime: true, graphType: 'PRT', modePerformancePerTestCase: true, modeThroughput: true, ignoreFailedBuilds: true, sourceDataFiles: ' reports/jmeter/*.jtl '
+            }
+        }
+    }
+}
